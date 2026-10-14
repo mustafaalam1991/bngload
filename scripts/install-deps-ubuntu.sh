@@ -30,16 +30,18 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ $EUID -eq 0 ]] || { echo "run as root (sudo)" >&2; exit 2; }
-. /etc/os-release
-case "$VERSION_ID" in
+# Read os-release in a subshell so its variables (VERSION, ID, …) cannot
+# clobber this script's.
+OS_VERSION_ID=$(. /etc/os-release && echo "$VERSION_ID")
+case "$OS_VERSION_ID" in
   22.04|24.04) ;;
-  *) echo "warning: tested on Ubuntu 22.04 and 24.04; this is $PRETTY_NAME" >&2 ;;
+  *) echo "warning: tested on Ubuntu 22.04 and 24.04; this is $(. /etc/os-release && echo "$PRETTY_NAME")" >&2 ;;
 esac
 
 export DEBIAN_FRONTEND=noninteractive
 PKGS=(build-essential git curl ca-certificates jq make iproute2 ethtool chrony linuxptp tcpdump
       python3 python3-venv python3-pip shellcheck)
-[[ "$VERSION_ID" == "22.04" ]] && PKGS+=(python3-tomli)   # tomllib arrived in Python 3.11
+[[ "$OS_VERSION_ID" == "22.04" ]] && PKGS+=(python3-tomli)   # tomllib arrived in Python 3.11
 apt-get update -q
 apt-get install -y -q "${PKGS[@]}"
 
