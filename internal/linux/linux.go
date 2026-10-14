@@ -4,8 +4,10 @@
 // (including PTP hardware clocks) and capability inspection.
 //
 // Everything here is a thin, documented translation of a kernel interface.
-// Higher-level packages (nic, clock, tstamp, kbench) build on it. Keeping the
-// unsafe code in one small package makes it easy to audit (design SR-25).
+// Higher-level packages (nic, clock, tstamp, kbench) build on it. The raw
+// syscalls live here; other kernel-interface packages (nic, pktio/afpacket,
+// kbench, netlinkx) use unsafe only to pass ABI structs to these wrappers or
+// to check struct sizes, which keeps it easy to audit (design SR-25).
 package linux
 
 import (

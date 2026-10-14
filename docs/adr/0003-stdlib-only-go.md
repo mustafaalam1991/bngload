@@ -22,7 +22,9 @@ interfaces it needs are implemented directly:
 - Lab hosts are often air-gapped or behind strict proxies; `go build` must
   work without a module proxy.
 - Phase 0 needs only a handful of calls; the code is small, tested, and keeps
-  all `unsafe` in one package that is easy to audit (SR-25).
+  `unsafe` to the kernel-interface packages (raw syscalls only in
+  `internal/linux`; elsewhere only to pass ABI structs), which is easy to
+  audit (SR-25).
 - An empty `go.sum` is the simplest possible supply-chain story for the first
   binaries that run as root on a lab host (SR-24).
 

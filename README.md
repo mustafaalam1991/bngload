@@ -131,8 +131,16 @@ CI (`.github/workflows/ci.yml`) runs the unit tests on every push and the
 root integration tests plus a `--quick` Phase 0 smoke run (veth, BNG Blaster
 self-loop) on GitHub's Ubuntu runners.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the rules every change
+follows (report format, safety interlock, measurement correctness,
+dependencies) and the pull-request checklist.
+
 ## Status
 
 Phase 0 tooling complete; Phase 0 *results* depend on the lab (NICs with
 hardware timestamping, chrony, DUT access, owners for the open questions).
 Phase 1 (PPPoE discovery prototype) starts once the acceptance report passes.
+
+## License
+
+GNU General Public License v3.0 — see [LICENSE](LICENSE).
