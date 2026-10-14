@@ -26,10 +26,23 @@ case "${1:-}" in
       ip link add "$A" type veth peer name "$B"
     fi
     for i in "$A" "$B"; do
-      sysctl -q -w "net.ipv6.conf.$i.disable_ipv6=1"
+      # Absent when the kernel runs without IPv6: nothing to disable then.
+      [[ -e /proc/sys/net/ipv6/conf/$i ]] && sysctl -q -w "net.ipv6.conf.$i.disable_ipv6=1"
       ip link set dev "$i" mtu 1508 up
     done
-    install -d -m 0755 "$SCRATCH"
+    # The scratch directory holds the interlock files and is written by root,
+    # so it must be root-owned and not writable by anyone else: a directory
+    # (or symlink) pre-created by another user at this path is refused.
+    if [[ -e "$SCRATCH" || -L "$SCRATCH" ]]; then
+      if [[ -L "$SCRATCH" || ! -d "$SCRATCH" || "$(stat -c %u "$SCRATCH")" != 0 ]] \
+         || (( 8#$(stat -c %a "$SCRATCH") & 8#022 )); then
+        echo "refusing: $SCRATCH exists but is not a root-owned directory writable only by root" >&2
+        exit 1
+      fi
+    else
+      install -d -m 0755 -o root -g root "$SCRATCH"
+    fi
+    rm -f "$SCRATCH/lab-host" "$SCRATCH/interfaces.allow"
     printf 'lab=veth-dry-run\nowner=%s\n' "${SUDO_USER:-root}" >"$SCRATCH/lab-host"
     printf '%s\n%s\n' "$A" "$B" >"$SCRATCH/interfaces.allow"
     echo "created $A<->$B; scratch interlock files in $SCRATCH"

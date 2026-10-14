@@ -120,6 +120,18 @@ def test_repo_register_has_twelve_questions(repo: Path):
     assert [q.id for q in qs] == [f"OQ-{i:02d}" for i in range(1, 13)]
 
 
+def test_atomic_write_ignores_planted_symlink(tmp_path: Path):
+    victim = tmp_path / "victim"
+    victim.write_text("keep")
+    target = tmp_path / "r.json"
+    (tmp_path / "r.json.tmp").symlink_to(victim)
+    envelope.write_json_atomic(target, {"a": 1})
+    assert victim.read_text() == "keep"
+    assert json.loads(target.read_text()) == {"a": 1}
+    assert (target.stat().st_mode & 0o777) == 0o644
+    assert [p.name for p in tmp_path.iterdir() if p.name.startswith(".r.json.")] == []
+
+
 def test_parse_time_accepts_nanoseconds():
     t = envelope.parse_time("2026-10-14T01:02:03.123456789Z")
     assert t.microsecond == 123456 and t.tzinfo is not None

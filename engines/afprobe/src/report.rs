@@ -126,16 +126,38 @@ pub fn envelope(
 
 /// Writes `content` atomically (temporary file + rename), creating parent
 /// directories. `-` writes to stdout.
+///
+/// The temporary file is created exclusively (`O_CREAT|O_EXCL`, which never
+/// follows a symlink) under an unpredictable name. afprobe runs as root, so a
+/// fixed `<path>.tmp` in a shared directory would let another local user
+/// redirect the write to any file on the host.
 pub fn write_atomic(path: &Path, content: &str) -> io::Result<()> {
+    use std::os::unix::fs::OpenOptionsExt;
     if path.as_os_str() == "-" {
         return io::stdout().write_all(content.as_bytes());
     }
-    if let Some(dir) = path.parent().filter(|p| !p.as_os_str().is_empty()) {
-        std::fs::create_dir_all(dir)?;
+    let dir = match path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        Some(d) => {
+            std::fs::create_dir_all(d)?;
+            d.to_path_buf()
+        }
+        None => std::path::PathBuf::from("."),
+    };
+    let base = path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_else(|| "report".into());
+    for _ in 0..16 {
+        let tmp = dir.join(format!(".{base}.{:016x}.tmp", crate::sys::random_u64()));
+        let mut f = match std::fs::OpenOptions::new().write(true).create_new(true).mode(0o644).open(&tmp) {
+            Ok(f) => f,
+            Err(e) if e.kind() == io::ErrorKind::AlreadyExists => continue,
+            Err(e) => return Err(e),
+        };
+        let res = f.write_all(content.as_bytes()).and_then(|_| f.sync_all()).and_then(|_| std::fs::rename(&tmp, path));
+        if res.is_err() {
+            let _ = std::fs::remove_file(&tmp);
+        }
+        return res;
     }
-    let tmp = path.with_extension("json.tmp");
-    std::fs::write(&tmp, content)?;
-    std::fs::rename(&tmp, path)
+    Err(io::Error::new(io::ErrorKind::AlreadyExists, "could not create a unique temporary file"))
 }
 
 #[cfg(test)]
@@ -150,6 +172,28 @@ mod tests {
         assert_eq!(rfc3339(t), "2000-02-29T00:00:00.000000005Z");
         let t = UNIX_EPOCH + Duration::from_secs(1_791_936_000 + 3661);
         assert_eq!(rfc3339(t), "2026-10-14T01:01:01.000000000Z");
+    }
+
+    #[test]
+    fn atomic_write_ignores_planted_symlink() {
+        use std::os::unix::fs::PermissionsExt;
+        let dir = std::env::temp_dir().join(format!("afprobe-symlink-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).unwrap();
+        let victim = dir.join("victim");
+        std::fs::write(&victim, "keep").unwrap();
+        let p = dir.join("r.json");
+        std::os::unix::fs::symlink(&victim, p.with_extension("json.tmp")).unwrap();
+        write_atomic(&p, "{}\n").unwrap();
+        assert_eq!(std::fs::read_to_string(&victim).unwrap(), "keep");
+        assert_eq!(std::fs::read_to_string(&p).unwrap(), "{}\n");
+        assert_eq!(std::fs::metadata(&p).unwrap().permissions().mode() & 0o777, 0o644);
+        let leftovers = std::fs::read_dir(&dir)
+            .unwrap()
+            .filter(|e| e.as_ref().unwrap().file_name().to_string_lossy().starts_with(".r.json."))
+            .count();
+        assert_eq!(leftovers, 0);
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

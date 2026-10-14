@@ -11,11 +11,13 @@ wrapper so that the acceptance report can treat their results uniformly::
 
 from __future__ import annotations
 
+import contextlib
 import datetime as _dt
 import json
 import os
 import platform
 import socket
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -118,12 +120,25 @@ class Envelope:
 
 
 def write_json_atomic(path: str | os.PathLike[str], obj: Any) -> Path:
-    """Writes indented JSON via a temporary file and rename."""
+    """Writes indented JSON via a temporary file and rename.
+
+    The temporary file is created exclusively with an unpredictable name
+    (``tempfile.mkstemp``: O_CREAT|O_EXCL, never following a symlink). The
+    harness runs as root, so a fixed ``<path>.tmp`` in a shared directory
+    would let another local user redirect the write to any file.
+    """
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    tmp = p.with_name(p.name + ".tmp")
-    tmp.write_text(json.dumps(obj, indent=2, default=_json_default) + "\n")
-    os.replace(tmp, p)
+    fd, tmp = tempfile.mkstemp(dir=p.parent, prefix=f".{p.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(json.dumps(obj, indent=2, default=_json_default) + "\n")
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, p)
+    except BaseException:
+        with contextlib.suppress(OSError):
+            os.unlink(tmp)
+        raise
     return p
 
 

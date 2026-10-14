@@ -134,19 +134,42 @@ func (e *Envelope) Finish(v Verdict, summary string, data any) {
 // WriteFile writes the envelope as indented JSON. The write is atomic
 // (temporary file + rename) so a crash never leaves a truncated result that
 // the acceptance report could misread.
+//
+// The temporary file gets an unpredictable name and is created exclusively
+// (os.CreateTemp: O_CREAT|O_EXCL, never following a symlink). The tools run
+// as root, so a fixed name such as "<path>.tmp" in a shared directory would
+// let another local user redirect the write to any file on the host.
 func (e *Envelope) WriteFile(path string) error {
 	b, err := json.MarshalIndent(e, "", "  ")
 	if err != nil {
 		return fmt.Errorf("encode report: %w", err)
 	}
 	b = append(b, '\n')
-	if dir := filepath.Dir(path); dir != "" {
-		if err := os.MkdirAll(dir, 0o755); err != nil {
-			return fmt.Errorf("create report directory: %w", err)
-		}
+	return WriteFileAtomic(path, b, 0o644)
+}
+
+// WriteFileAtomic writes data to path via an exclusively created temporary
+// file in the same directory, then renames it into place.
+func WriteFileAtomic(path string, data []byte, perm os.FileMode) error {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("create report directory: %w", err)
 	}
-	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+	f, err := os.CreateTemp(dir, "."+filepath.Base(path)+".*.tmp")
+	if err != nil {
+		return fmt.Errorf("write report: %w", err)
+	}
+	tmp := f.Name()
+	defer os.Remove(tmp) // no-op after a successful rename
+	if _, err := f.Write(data); err != nil {
+		f.Close()
+		return fmt.Errorf("write report: %w", err)
+	}
+	if err := f.Chmod(perm); err != nil {
+		f.Close()
+		return fmt.Errorf("write report: %w", err)
+	}
+	if err := f.Close(); err != nil {
 		return fmt.Errorf("write report: %w", err)
 	}
 	if err := os.Rename(tmp, path); err != nil {
