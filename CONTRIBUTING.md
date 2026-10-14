@@ -357,11 +357,11 @@ the kernel version, and the NIC model, driver and firmware
 (`ethtool -i <if>`). For BNG Blaster runs, include the files from
 `runs/…/blaster/<scenario>-…/`.
 
-**Security issues** — a way to bypass the safety interlock, to make a tool
-transmit on a non-allowlisted interface, or to run unintended code — should
-not be filed as public issues. Contact the maintainer
-([@mustafaalam1991](https://github.com/mustafaalam1991)) privately, or use
-GitHub's private vulnerability reporting if it is enabled for the repository.
+**Security issues** — for example a way to bypass the safety interlock, to
+make a tool transmit on a non-allowlisted interface, or to gain root through
+one of the tools — must not be filed as public issues. Follow
+[SECURITY.md](SECURITY.md): report them privately through the repository's
+Security tab.
 
 ## License
 

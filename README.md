@@ -133,7 +133,8 @@ self-loop) on GitHub's Ubuntu runners.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the rules every change
 follows (report format, safety interlock, measurement correctness,
-dependencies) and the pull-request checklist.
+dependencies) and the pull-request checklist. Report security issues privately as
+described in [SECURITY.md](SECURITY.md).
 
 ## Status
 
