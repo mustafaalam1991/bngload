@@ -1,0 +1,83 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go vet ./...
+      - run: go test -race ./...
+      - run: make bngload
+
+  rust:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup toolchain install stable --profile minimal -c clippy
+      - working-directory: engines/afprobe
+        run: |
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --locked
+
+  python:
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - working-directory: tools/lab
+        run: |
+          pip install -e '.[test]' pyflakes
+          python -m pyflakes src tests
+          python -m pytest
+
+  shell:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: shellcheck -S warning scripts/*.sh
+
+  # Root-only tests over veth pairs, including a BNG Blaster self-loop.
+  integration:
+    runs-on: ubuntu-24.04
+    needs: [go, rust, python]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: rustup toolchain install stable --profile minimal
+      - run: sudo scripts/install-bngblaster.sh
+      - run: sudo pip install pytest || sudo pip install --break-system-packages pytest
+      - run: make build
+      - run: sudo scripts/lab-veth.sh up
+      - name: veth integration tests
+        run: |
+          eval "$(scripts/lab-veth.sh env)"
+          sudo -E env "PATH=$PATH" make test-integration
+      - name: Phase 0 smoke run (veth, self-loop)
+        run: |
+          eval "$(scripts/lab-veth.sh env)"
+          sudo -E env "PATH=$PATH" scripts/phase0-run.sh --tx-if blt0 --rx-if blt1 \
+            --spec lab/blaster/selfloop-veth.toml --quick --host-name ci --out runs/ci || true
+          test -s runs/ci/acceptance.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase0-smoke-run
+          path: runs/ci/

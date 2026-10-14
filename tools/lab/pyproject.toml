@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bngload-lab"
+version = "0.1.0"
+description = "bngload Phase 0 lab harness: BNG Blaster baselines (TS-01/TS-04 equivalents), open-question tracking and the Phase 0 acceptance report"
+readme = "README.md"
+requires-python = ">=3.10"
+# Runtime is the standard library only (ADR-0001). Python 3.10 (Ubuntu 22.04)
+# needs tomli for TOML; 3.11+ has tomllib.
+dependencies = ["tomli>=1.1; python_version < '3.11'"]
+
+[project.optional-dependencies]
+test = ["pytest>=7"]
+
+[project.scripts]
+bngload-lab = "bngload_lab.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -m \"not blaster\""
+markers = ["blaster: needs root, BNG Blaster and the blt0/blt1 veth pair (run with -m blaster)"]

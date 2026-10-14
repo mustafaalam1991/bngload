@@ -1,0 +1,28 @@
+[package]
+name = "afprobe"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.77"
+description = "AF_PACKET I/O ceiling probe for bngload Phase 0: TPACKET_V3 RX ring, paced sendmmsg TX"
+publish = false
+
+# Only `libc` (ADR-0001): the probe must build in air-gapped labs from a
+# vendored crate set, and it must not carry a runtime of its own (no async,
+# no allocator tricks) so that its numbers are a clean reference for the
+# kernel path that the Go engine will use.
+[dependencies]
+libc = "0.2"
+
+[lib]
+name = "afprobe"
+path = "src/lib.rs"
+
+[[bin]]
+name = "afprobe"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+debug = "line-tables-only" # keeps `perf` symbolisation usable

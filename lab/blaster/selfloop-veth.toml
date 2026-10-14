@@ -1,0 +1,38 @@
+# Harness self-test without a DUT: BNG Blaster talks to itself over a veth
+# pair (scripts/lab-veth.sh creates blt0/blt1). Results are labelled
+# "selfloop" and never count as DUT numbers in the acceptance report.
+
+[dut]
+name = "selfloop-veth"
+mode = "selfloop"
+
+[access]
+interface = "blt1"
+outer_vlan = [100, 199]
+inner_vlan = [1, 4000]
+
+[selfloop]
+interface = "blt0"
+
+[ppp]
+auth = "pap"
+
+[ts01]
+iterations = 10
+hold_s = 1.0
+interval_s = 0.2
+deadline_s = 10.0
+
+[ts04]
+min_rate = 10
+max_rate = 400
+step_s = 5.0
+precision = 0.1
+verify_s = 10.0
+deadline_s = 10.0
+
+[baseline]
+sessions = 1000
+rate = 200
+hold_s = 2.0
+deadline_s = 30.0

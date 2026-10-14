@@ -1,0 +1,128 @@
+# Phase 0 open-question register (design section 17.7, in priority order).
+#
+# Phase 0 acceptance: every question has an owner. Answers may still be
+# pending. Check with:
+#   bngload-lab open-questions docs/phase0/open-questions.toml
+#
+# Fields: id, priority, question, owner, due (YYYY-MM-DD), status
+# (open | answered | deferred), answer, evidence (path or link).
+
+[[question]]
+id = "OQ-01"
+priority = 1
+question = "Which DUTs, firmware and licence limits are in scope, and is any of them a CUPS/disaggregated BNG (BBF TR-459)?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-02"
+priority = 2
+question = "What exactly counts as 'session up' for sign-off: IPv4 only, dual-stack, IPv6 with PD, or a successful data probe?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-03"
+priority = 3
+question = "Which SLA thresholds (T_est, expected R_max, burst T_burst) define pass/fail, and who owns sign-off?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-04"
+priority = 4
+question = "Does the production design use Diameter (Gx/Gy) on the BNG, or RADIUS only? Does the DUT need vendor VSAs from AAA to bring sessions up?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-05"
+priority = 5
+question = "Does the generator NIC support hardware TX and RX timestamps, and is PTP available in the lab?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = "answer with runs/<date>/tstamp.json (bngload tstamp check)"
+
+[[question]]
+id = "OQ-06"
+priority = 6
+question = "Access topology to emulate: direct, via switch, via OLT/DSLAM; 1:1 or N:1 VLANs; must bngload insert TR-101 Circuit-ID/Remote-ID?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-07"
+priority = 7
+question = "Is data-plane load through sessions required for 'loaded' tests, and at what rate?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-08"
+priority = 8
+question = "Build bngload or extend BNG Blaster — confirm after the Phase 0 comparison."
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = "compare runs/<date>/ts01-*.json and ts04-*.json with the design targets"
+
+[[question]]
+id = "OQ-09"
+priority = 9
+question = "When is Kubernetes deployment required, and on which CNI/SR-IOV stack?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-10"
+priority = 10
+question = "Where are results stored and for how long; do they need to feed an existing reporting system?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-11"
+priority = 11
+question = "Lab security policy: is RadSec or IPsec mandatory between BNG and AAA even in the lab?"
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""
+
+[[question]]
+id = "OQ-12"
+priority = 12
+question = "Team: Go experience, ownership after delivery."
+owner = ""
+due = ""
+status = "open"
+answer = ""
+evidence = ""

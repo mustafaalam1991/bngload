@@ -1,0 +1,20 @@
+# Build outputs
+/bin/
+/dist/
+/engines/*/target/
+
+# Run outputs (reports are archived deliberately, not committed by accident)
+/runs/
+*.tmp
+
+# Python
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+/tools/lab/build/
+
+# Editors
+.idea/
+.vscode/
+*.swp

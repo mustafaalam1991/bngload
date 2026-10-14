@@ -1,0 +1,9 @@
+# FreeRADIUS users file for Phase 0 (mods-config/files/authorize).
+# Every generated subscriber (sub1@lab, sub2@lab, …) authenticates with the
+# password from the lab spec ([ppp] password, default "test"). Addresses come
+# from the DUT's local pools, so no Framed-IP-Address is returned.
+
+DEFAULT Cleartext-Password := "test"
+	Service-Type = Framed-User,
+	Framed-Protocol = PPP,
+	Acct-Interim-Interval = 0

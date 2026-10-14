@@ -1,0 +1,69 @@
+# bngload Phase 0 lab specification — one file per DUT.
+#
+# Used by `bngload-lab ts01|ts04|baseline -f <this file>` to drive BNG Blaster
+# against the DUT and record the Phase 0 baseline numbers.
+# Every key except dut.name and access.interface has a default.
+# Validate with:  bngload-lab check-spec -f lab/blaster/<dut>.toml
+
+[lab]
+name = "bng-lab-1"          # free-form labels copied into reports
+site = "lab-room-2"
+
+[dut]
+name = "accel-ppp-01"       # groups results per DUT in the acceptance report
+vendor = "accel-ppp"
+firmware = "1.13.0"
+# "external" = a real BNG behind the access port.
+# "selfloop" = BNG Blaster's A10NSP interface answers PPPoE on a second port
+#              (harness validation only; never counted as DUT results).
+mode = "external"
+
+[access]
+interface = "ens2f0"        # must be in /etc/bngload/interfaces.allow, no IP
+outer_vlan = [100, 199]     # S-VLAN range; omit both for untagged
+inner_vlan = [1, 4000]      # C-VLAN range; omit for single-tagged
+# QinQ with MRU 1492 needs MTU >= 1508 on the access interface
+# (AF_PACKET accepts only one tag above the MTU); `bngload health` checks it.
+
+[ppp]
+auth = "pap"                # pap | chap — must match the DUT and RADIUS users
+username = "sub{session-global}@lab"   # {session-global} = session number
+password = "test"
+mru = 1492
+ipcp = true
+ip6cp = true
+dhcpv6_pd = false           # true also requests a delegated prefix
+
+[blaster]
+binary = ""                 # empty = auto-detect (/usr/sbin from the .deb,
+                            # /usr/local/sbin from a source build)
+max_outstanding = 800       # sessions in setup at once (raised to 2x rate)
+discovery_timeout_s = 5
+discovery_retry = 10
+logging = []                # extra -l categories, e.g. ["pppoe"]
+
+[ts01]                      # TS-01: 1 session, repeated
+iterations = 100
+hold_s = 10.0
+interval_s = 1.0
+deadline_s = 30.0
+t_est_s = 1.0               # pass: setup p99 <= t_est_s / 10
+
+[ts04]                      # TS-04: maximum setup rate
+min_rate = 10
+max_rate = 1000             # <= 1/3 of BNG Blaster's ceiling on this host
+step_s = 30.0               # a step offers rate x step_s sessions, kept up
+                            # until the step ends (population = rate x step_s)
+precision = 0.02            # stop when the bracket is within 2 %
+verify_s = 600.0            # verification: ceil(verify_s/step_s) step runs
+success_ratio = 0.999
+deadline_s = 30.0
+max_retransmission_ratio = 0.01
+t_est_s = 1.0               # last session must be <= t_est_s behind schedule
+max_sessions = 0            # licence/pool cap per step; 0 = no limit
+
+[baseline]                  # "BNG Blaster PPPoE 1k-session run"
+sessions = 1000
+rate = 100
+hold_s = 30.0
+deadline_s = 60.0
